@@ -1,8 +1,11 @@
+import { useNotifications } from '@/hooks/use-notifications';
+import type { Notification, NotificationType } from '@/types/database';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+    ActivityIndicator,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -11,78 +14,50 @@ import {
     View,
 } from 'react-native';
 
-interface Notification {
-  id: string;
-  type: 'payment' | 'request' | 'announcement';
-  title: string;
-  description: string;
-  timestamp: string;
+type FilterKey = 'all' | 'request' | 'payments' | 'announcements';
+
+type NotificationStyle = {
   icon: string;
   backgroundColor: string;
   textColor: string;
-  documentName?: string;
-}
+};
+
+const TYPE_STYLES: Record<NotificationType, NotificationStyle> = {
+  request: {
+    icon: 'description',
+    backgroundColor: '#E3F2FD',
+    textColor: '#1976D2',
+  },
+  payment: {
+    icon: 'account-balance-wallet',
+    backgroundColor: '#FFF3E0',
+    textColor: '#FF9800',
+  },
+  announcement: {
+    icon: 'notifications-active',
+    backgroundColor: '#FFEBEE',
+    textColor: '#C62828',
+  },
+};
+
+const formatTimestamp = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
 const NotificationsScreen = () => {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<'all' | 'request' | 'payments' | 'announcements'>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const { notifications, isLoading, markAsRead, markAllRead } = useNotifications();
 
-  const notifications: Notification[] = [
-    {
-      id: '1',
-      type: 'payment',
-      title: 'Payment Verified',
-      description: 'Your payment for Barangay Clearance has been confirmed.',
-      timestamp: 'March 15 | 5:00 PM',
-      icon: 'account-balance-wallet',
-      backgroundColor: '#FFF3E0',
-      textColor: '#FF9800',
-      documentName: 'Barangay Clearance',
-    },
-    {
-      id: '2',
-      type: 'request',
-      title: 'Request Approved',
-      description: 'Your Barangay Clearance is ready for download.',
-      timestamp: 'March 15 | 5:00 PM',
-      icon: 'description',
-      backgroundColor: '#E3F2FD',
-      textColor: '#1976D2',
-      documentName: 'Barangay Clearance',
-    },
-    {
-      id: '3',
-      type: 'request',
-      title: 'Action Required',
-      description: 'Please upload your proof of payment to continue.',
-      timestamp: 'March 15 | 5:00 PM',
-      icon: 'schedule',
-      backgroundColor: '#FCE4EC',
-      textColor: '#E91E63',
-    },
-    {
-      id: '4',
-      type: 'announcement',
-      title: 'Barangay Announcement',
-      description: 'Office will be closed on April 9 (Holiday).',
-      timestamp: 'March 15 | 5:00 PM',
-      icon: 'notifications-active',
-      backgroundColor: '#FFEBEE',
-      textColor: '#C62828',
-    },
-    {
-      id: '5',
-      type: 'request',
-      title: 'Request Update',
-      description: 'Your request is currently being reviewed by the barangay staff.',
-      timestamp: 'March 15 | 5:00 PM',
-      icon: 'update',
-      backgroundColor: '#E8F5E9',
-      textColor: '#2E7D32',
-    },
-  ];
-
-  const getFilteredNotifications = () => {
+  const getFiltered = () => {
     if (activeFilter === 'all') return notifications;
     if (activeFilter === 'payments') return notifications.filter((n) => n.type === 'payment');
     if (activeFilter === 'request') return notifications.filter((n) => n.type === 'request');
@@ -90,40 +65,34 @@ const NotificationsScreen = () => {
     return notifications;
   };
 
-  const handleNotificationPress = (notification: Notification) => {
-    if (notification.type === 'payment' || (notification.type === 'request' && notification.title === 'Request Approved')) {
-      // Navigate to transaction history detail
+  const handlePress = async (notification: Notification) => {
+    if (!notification.is_read) {
+      await markAsRead(notification.id);
+    }
+
+    const requestId = notification.metadata?.request_id as string | undefined;
+    if (requestId && (notification.type === 'request' || notification.type === 'payment')) {
       router.push({
-        pathname: '/transaction-detail',
-        params: {
-          name: notification.documentName || 'Document',
-          status: 'completed',
-          refNumber: `REQ-2026-${notification.id}234`,
-          paymentMethod: 'Gcash',
-          dateRequested: 'March 15, 2026',
-          amount: '50.00',
-          recipient: 'Pulong Buhangin, Santa Maria',
-        },
+        pathname: '/track-request-detail',
+        params: { requestId },
       });
     }
   };
 
-  const handleBackPress = () => {
-    router.back();
-  };
-
-  const filteredNotifications = getFilteredNotifications();
+  const filteredNotifications = getFiltered();
 
   return (
     <LinearGradient colors={['#EEF4FD', '#FDFFED']} style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <MaterialIcons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
-          <View style={styles.backButton} />
+          <TouchableOpacity onPress={markAllRead} style={styles.backButton}>
+            <MaterialIcons name="done-all" size={22} color="white" />
+          </TouchableOpacity>
         </View>
 
         {/* Filter Tabs */}
@@ -134,73 +103,22 @@ const NotificationsScreen = () => {
             scrollEventThrottle={16}
             contentContainerStyle={styles.filterContent}
           >
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                activeFilter === 'all' && styles.filterTabActive,
-              ]}
-              onPress={() => setActiveFilter('all')}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  activeFilter === 'all' && styles.filterTabTextActive,
-                ]}
+            {(['all', 'request', 'payments', 'announcements'] as FilterKey[]).map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[styles.filterTab, activeFilter === filter && styles.filterTabActive]}
+                onPress={() => setActiveFilter(filter)}
               >
-                All
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                activeFilter === 'request' && styles.filterTabActive,
-              ]}
-              onPress={() => setActiveFilter('request')}
-            >
-            <Text
-              style={[
-                styles.filterTabText,
-                activeFilter === 'request' && styles.filterTabTextActive,
-              ]}
-            >
-              Request
-            </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                activeFilter === 'payments' && styles.filterTabActive,
-              ]}
-              onPress={() => setActiveFilter('payments')}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  activeFilter === 'payments' && styles.filterTabTextActive,
-                ]}
-              >
-                Payments
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                activeFilter === 'announcements' && styles.filterTabActive,
-              ]}
-              onPress={() => setActiveFilter('announcements')}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  activeFilter === 'announcements' && styles.filterTabTextActive,
-                ]}
-              >
-                Announcements
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    activeFilter === filter && styles.filterTabTextActive,
+                  ]}
+                >
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
 
@@ -209,38 +127,40 @@ const NotificationsScreen = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.notificationsContent}
         >
-          {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notification) => (
-              <TouchableOpacity
-                key={notification.id}
-                style={styles.notificationCard}
-                onPress={() => handleNotificationPress(notification)}
-                activeOpacity={0.8}
-              >
-                {/* Icon Section */}
-                <View
+          {isLoading ? (
+            <View style={styles.emptyContainer}>
+              <ActivityIndicator size="large" color="#1565C0" />
+            </View>
+          ) : filteredNotifications.length > 0 ? (
+            filteredNotifications.map((notification) => {
+              const style = TYPE_STYLES[notification.type] ?? TYPE_STYLES.request;
+              return (
+                <TouchableOpacity
+                  key={notification.id}
                   style={[
-                    styles.iconContainer,
-                    { backgroundColor: notification.backgroundColor },
+                    styles.notificationCard,
+                    !notification.is_read && styles.notificationCardUnread,
                   ]}
+                  onPress={() => handlePress(notification)}
+                  activeOpacity={0.8}
                 >
-                  <MaterialIcons
-                    name={notification.icon as any}
-                    size={24}
-                    color={notification.textColor}
-                  />
-                </View>
+                  <View
+                    style={[styles.iconContainer, { backgroundColor: style.backgroundColor }]}
+                  >
+                    <MaterialIcons name={style.icon as any} size={24} color={style.textColor} />
+                  </View>
 
-                {/* Text Section */}
-                <View style={styles.textContainer}>
-                  <Text style={styles.notificationTitle}>{notification.title}</Text>
-                  <Text style={styles.notificationDescription}>{notification.description}</Text>
-                </View>
+                  <View style={styles.textContainer}>
+                    <Text style={styles.notificationTitle}>{notification.title}</Text>
+                    <Text style={styles.notificationDescription}>{notification.body}</Text>
+                  </View>
 
-                {/* Timestamp */}
-                <Text style={styles.timestamp}>{notification.timestamp}</Text>
-              </TouchableOpacity>
-            ))
+                  <Text style={styles.timestamp}>{formatTimestamp(notification.created_at)}</Text>
+
+                  {!notification.is_read ? <View style={styles.unreadDot} /> : null}
+                </TouchableOpacity>
+              );
+            })
           ) : (
             <View style={styles.emptyContainer}>
               <MaterialIcons name="notifications-off" size={48} color="#BDBDBD" />
@@ -338,6 +258,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  notificationCardUnread: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#1565C0',
+  },
   iconContainer: {
     width: 56,
     height: 56,
@@ -370,8 +294,17 @@ const styles = StyleSheet.create({
     top: 16,
     right: 16,
   },
+  unreadDot: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1565C0',
+  },
 
-  // Empty State
+  // Empty / Loading State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',

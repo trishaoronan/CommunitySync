@@ -1,0 +1,38 @@
+-- RLS policies for profiles table
+-- Ensures authenticated users can read and update only their own profile row.
+alter table public.profiles enable row level security;
+
+drop policy if exists "own profile - select" on public.profiles;
+create policy "own profile - select"
+  on public.profiles for select
+  using (auth.uid() = id);
+
+drop policy if exists "own profile - update" on public.profiles;
+create policy "own profile - update"
+  on public.profiles for update
+  using (auth.uid() = id);
+
+-- Allow the trigger / service role to insert profiles on signup
+drop policy if exists "own profile - insert" on public.profiles;
+create policy "own profile - insert"
+  on public.profiles for insert
+  with check (auth.uid() = id);
+
+
+-- RLS policies for document_requests table
+alter table public.document_requests enable row level security;
+
+drop policy if exists "own requests - select" on public.document_requests;
+create policy "own requests - select"
+  on public.document_requests for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "own requests - insert" on public.document_requests;
+create policy "own requests - insert"
+  on public.document_requests for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "own requests - update" on public.document_requests;
+create policy "own requests - update"
+  on public.document_requests for update
+  using (auth.uid() = user_id);

@@ -1,0 +1,51 @@
+-- 1. Create the smart function to unpack the registration data
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (
+    id,
+    full_name,
+    phone_number,
+    complete_address,
+    gender,
+    civil_status,
+    age
+  )
+  VALUES (
+    NEW.id,
+    -- Safely stitch together First, Middle, and Last name
+    TRIM(
+      COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' ||
+      COALESCE(NEW.raw_user_meta_data->>'middle_name', '') || ' ' ||
+      COALESCE(NEW.raw_user_meta_data->>'last_name', '')
+    ),
+    -- Grab the rest of the fields exactly as spelled in options.data
+    NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'address',
+    NEW.raw_user_meta_data->>'gender',
+    NEW.raw_user_meta_data->>'civil_status',
+    NEW.raw_user_meta_data->>'age'
+  )
+  -- The Safety Net: If the row already exists, just update it with this data
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    phone_number = EXCLUDED.phone_number,
+    complete_address = EXCLUDED.complete_address,
+    gender = EXCLUDED.gender,
+    civil_status = EXCLUDED.civil_status,
+    age = EXCLUDED.age;
+
+  RETURN NEW;
+END;
+$$;
+
+-- 2. Delete the old, broken trigger (if it exists)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- 3. Wire up the new trigger to fire the exact second a user signs up
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

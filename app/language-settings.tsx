@@ -1,22 +1,19 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
     Alert,
-    Dimensions,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-} from 'react-native';
-
-const { width, height } = Dimensions.get('window');
+} from "react-native";
 
 // Simple Localization System
-type LanguageType = 'en' | 'fil';
+type LanguageType = "en" | "fil";
 
 interface Translations {
   [key: string]: {
@@ -27,28 +24,28 @@ interface Translations {
 
 const translations: Translations = {
   title: {
-    en: 'Language',
-    fil: 'Wika',
+    en: "Language",
+    fil: "Wika",
   },
   filipinoLanguage: {
-    en: 'Filipino',
-    fil: 'Filipino',
+    en: "Filipino",
+    fil: "Filipino",
   },
   englishLanguage: {
-    en: 'English',
-    fil: 'Ingles',
+    en: "English",
+    fil: "Ingles",
   },
   saveChanges: {
-    en: 'Save Changes',
-    fil: 'I-save ang mga Pagbabago',
+    en: "Save Changes",
+    fil: "I-save ang mga Pagbabago",
   },
   languageUpdated: {
-    en: 'Language Updated',
-    fil: 'Nag-update ang Wika',
+    en: "Language Updated",
+    fil: "Nag-update ang Wika",
   },
   languageChangedSuccess: {
-    en: 'Your language preference has been saved.',
-    fil: 'Nakatipid na ang iyong kagustuhan sa wika.',
+    en: "Your language preference has been saved.",
+    fil: "Nakatipid na ang iyong kagustuhan sa wika.",
   },
 };
 
@@ -58,7 +55,7 @@ const t = (key: string, language: LanguageType): string => {
 
 const LanguageSettingsScreen = () => {
   const router = useRouter();
-  const [selectedLanguage, setSelectedLanguage] = useState<LanguageType>('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageType>("en");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleBackPress = () => {
@@ -76,16 +73,16 @@ const LanguageSettingsScreen = () => {
     setTimeout(() => {
       setIsSaving(false);
       Alert.alert(
-        t('languageUpdated', selectedLanguage),
-        t('languageChangedSuccess', selectedLanguage),
+        t("languageUpdated", selectedLanguage),
+        t("languageChangedSuccess", selectedLanguage),
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () => {
               router.back();
             },
           },
-        ]
+        ],
       );
     }, 800);
   };
@@ -97,18 +94,23 @@ const LanguageSettingsScreen = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('title', selectedLanguage)}</Text>
+        <Text style={styles.headerTitle}>{t("title", selectedLanguage)}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       {/* Gradient Background with Globe Icon */}
       <LinearGradient
-        colors={['#0a7ea4', '#FFC107']}
+        colors={["#0a7ea4", "#FFC107"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}
       >
-        <MaterialIcons name="public" size={80} color="#FFF" style={styles.globeIcon} />
+        <MaterialIcons
+          name="public"
+          size={80}
+          color="#FFF"
+          style={styles.globeIcon}
+        />
       </LinearGradient>
 
       <ScrollView
@@ -117,20 +119,23 @@ const LanguageSettingsScreen = () => {
       >
         {/* Language Selection Card */}
         <View style={styles.selectionCard}>
-
           {/* Filipino Option */}
           <TouchableOpacity
             style={styles.languageOption}
-            onPress={() => handleLanguageSelect('fil')}
+            onPress={() => handleLanguageSelect("fil")}
           >
-            <Text style={styles.languageText}>{t('filipinoLanguage', selectedLanguage)}</Text>
+            <Text style={styles.languageText}>
+              {t("filipinoLanguage", selectedLanguage)}
+            </Text>
             <View
               style={[
                 styles.radioButton,
-                selectedLanguage === 'fil' && styles.radioButtonSelected,
+                selectedLanguage === "fil" && styles.radioButtonSelected,
               ]}
             >
-              {selectedLanguage === 'fil' && <View style={styles.radioButtonInner} />}
+              {selectedLanguage === "fil" && (
+                <View style={styles.radioButtonInner} />
+              )}
             </View>
           </TouchableOpacity>
 
@@ -140,16 +145,20 @@ const LanguageSettingsScreen = () => {
           {/* English Option */}
           <TouchableOpacity
             style={styles.languageOption}
-            onPress={() => handleLanguageSelect('en')}
+            onPress={() => handleLanguageSelect("en")}
           >
-            <Text style={styles.languageText}>{t('englishLanguage', selectedLanguage)}</Text>
+            <Text style={styles.languageText}>
+              {t("englishLanguage", selectedLanguage)}
+            </Text>
             <View
               style={[
                 styles.radioButton,
-                selectedLanguage === 'en' && styles.radioButtonSelected,
+                selectedLanguage === "en" && styles.radioButtonSelected,
               ]}
             >
-              {selectedLanguage === 'en' && <View style={styles.radioButtonInner} />}
+              {selectedLanguage === "en" && (
+                <View style={styles.radioButtonInner} />
+              )}
             </View>
           </TouchableOpacity>
         </View>
@@ -166,7 +175,7 @@ const LanguageSettingsScreen = () => {
           activeOpacity={0.8}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving ? '...' : t('saveChanges', selectedLanguage)}
+            {isSaving ? "..." : t("saveChanges", selectedLanguage)}
           </Text>
         </TouchableOpacity>
       </View>
@@ -177,39 +186,39 @@ const LanguageSettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
   },
 
   // Header
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   // Gradient Header
   gradientHeader: {
     height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   globeIcon: {
     opacity: 0.9,
@@ -223,10 +232,10 @@ const styles = StyleSheet.create({
 
   // Selection Card
   selectionCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -235,17 +244,17 @@ const styles = StyleSheet.create({
 
   // Language Option
   languageOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingTop: 20,
   },
   languageText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
     flex: 1,
   },
 
@@ -255,25 +264,25 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#CCC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+    borderColor: "#CCC",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF",
   },
   radioButtonSelected: {
-    borderColor: '#0a7ea4',
+    borderColor: "#0a7ea4",
   },
   radioButtonInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#0a7ea4',
+    backgroundColor: "#0a7ea4",
   },
 
   // Divider
   divider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: "#F0F0F0",
     marginHorizontal: 16,
   },
 
@@ -281,24 +290,24 @@ const styles = StyleSheet.create({
   footerContainer: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: "#E0E0E0",
   },
   saveButton: {
-    backgroundColor: '#FFC107',
+    backgroundColor: "#FFC107",
     paddingVertical: 14,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   saveButtonDisabled: {
     opacity: 0.7,
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
 });
 

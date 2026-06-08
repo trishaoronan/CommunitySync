@@ -1,0 +1,81 @@
+-- Fix: map signup metadata to the real profiles columns.
+-- The previous handle_new_user targeted columns that do not exist
+-- (phone_number, complete_address) and stitched names into full_name only,
+-- leaving first_name/middle_name/last_name empty. This rewrites the function
+-- to populate each dedicated column, with safe NULL + age handling, and
+-- stores the full raw metadata JSON as a historical record.
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  m         jsonb  := NEW.raw_user_meta_data;
+  v_first   text   := NULLIF(TRIM(m->>'first_name'), '');
+  v_middle  text   := NULLIF(TRIM(m->>'middle_name'), '');
+  v_last    text   := NULLIF(TRIM(m->>'last_name'), '');
+  v_bday    text   := NULLIF(TRIM(m->>'birthday'), '');
+  v_age     int4;
+BEGIN
+  -- Prefer the frontend-calculated age string; fall back to deriving it from
+  -- the birthday field (stored as YYYY-MM-DD by the registration form).
+  IF m->>'age' ~ '^\d+$' THEN
+    v_age := (m->>'age')::int4;
+  ELSIF v_bday IS NOT NULL THEN
+    BEGIN
+      v_age := EXTRACT(YEAR FROM AGE(NOW(), v_bday::date))::int4;
+    EXCEPTION WHEN OTHERS THEN
+      v_age := NULL;
+    END;
+  ELSE
+    v_age := NULL;
+  END IF;
+
+  INSERT INTO public.profiles (
+    id, first_name, middle_name, last_name, full_name,
+    email, phone, address, gender, birthday, civil_status, age, metadata
+  )
+  VALUES (
+    NEW.id,
+    v_first,
+    v_middle,
+    v_last,
+    -- concat_ws skips NULL parts, so a blank middle name yields "First Last"
+    NULLIF(TRIM(concat_ws(' ', v_first, v_middle, v_last)), ''),
+    -- email: auth.users is source of truth, fall back to metadata
+    COALESCE(NULLIF(TRIM(NEW.email), ''), NULLIF(TRIM(m->>'email'), '')),
+    NULLIF(TRIM(m->>'phone'), ''),
+    NULLIF(TRIM(m->>'address'), ''),
+    NULLIF(TRIM(m->>'gender'), ''),
+    v_bday,
+    NULLIF(TRIM(m->>'civil_status'), ''),
+    v_age,
+    m  -- full raw metadata stored as a historical record
+  )
+  -- COALESCE keeps existing non-null values so neither the trigger nor the
+  -- client-side upsert can clobber good data with a NULL.
+  -- metadata always overwrites so it reflects the latest signup payload.
+  ON CONFLICT (id) DO UPDATE SET
+    first_name   = COALESCE(EXCLUDED.first_name,   public.profiles.first_name),
+    middle_name  = COALESCE(EXCLUDED.middle_name,  public.profiles.middle_name),
+    last_name    = COALESCE(EXCLUDED.last_name,    public.profiles.last_name),
+    full_name    = COALESCE(EXCLUDED.full_name,    public.profiles.full_name),
+    email        = COALESCE(EXCLUDED.email,        public.profiles.email),
+    phone        = COALESCE(EXCLUDED.phone,        public.profiles.phone),
+    address      = COALESCE(EXCLUDED.address,      public.profiles.address),
+    gender       = COALESCE(EXCLUDED.gender,       public.profiles.gender),
+    birthday     = COALESCE(EXCLUDED.birthday,     public.profiles.birthday),
+    civil_status = COALESCE(EXCLUDED.civil_status, public.profiles.civil_status),
+    age          = COALESCE(EXCLUDED.age,          public.profiles.age),
+    metadata     = EXCLUDED.metadata;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Re-wire the trigger to fire on every new auth user.
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

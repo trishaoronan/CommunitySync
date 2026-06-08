@@ -1,97 +1,82 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useDocumentRequests } from "@/hooks/use-document-requests";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+  formatDisplayDate,
+  formatDocumentType,
+  formatPaymentStatus,
+  normalizePaymentStatus,
+} from "@/lib/documentRequests";
+import type { RequestStatus } from "@/types/database";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface RequestedDocument {
   id: string;
   name: string;
-  paymentMethod: string;
+  paymentStatusLabel: string;
   dateRequested: string;
-  status: 'completed' | 'unpaid' | 'pending';
+  paymentStatus: "completed" | "unpaid" | "pending";
+  requestStatus: RequestStatus;
 }
 
 const TransactionHistoryScreen = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('request');
+  const [activeTab, setActiveTab] = useState("request");
+  const { requests, isLoading, error } = useDocumentRequests();
 
-  const requestedDocuments: RequestedDocument[] = [
-    {
-      id: '1',
-      name: 'Business Permit',
-      paymentMethod: 'Paid Via Gcash',
-      dateRequested: 'March 15, 2026',
-      status: 'completed',
-    },
-    {
-      id: '2',
-      name: 'Barangay Clearance',
-      paymentMethod: 'Paid Via Gcash',
-      dateRequested: 'March 15, 2026',
-      status: 'completed',
-    },
-    {
-      id: '3',
-      name: 'Burial Assistance',
-      paymentMethod: 'Paid Via Gcash',
-      dateRequested: 'March 15, 2026',
-      status: 'unpaid',
-    },
-    {
-      id: '4',
-      name: 'Residency',
-      paymentMethod: 'Paid Via Gcash',
-      dateRequested: 'March 15, 2026',
-      status: 'unpaid',
-    },
-    {
-      id: '5',
-      name: 'Indigency',
-      paymentMethod: 'Paid Via Gcash',
-      dateRequested: 'March 15, 2026',
-      status: 'unpaid',
-    },
-  ];
+  const requestedDocuments: RequestedDocument[] = requests.map((request) => ({
+    id: request.id,
+    name: formatDocumentType(request.document_type),
+    paymentStatusLabel: `Payment: ${formatPaymentStatus(
+      request.payment_status,
+    )}`,
+    dateRequested: formatDisplayDate(request.created_at),
+    paymentStatus: normalizePaymentStatus(request.payment_status),
+    requestStatus: request.request_status,
+  }));
 
   const handleBackPress = () => {
     router.back();
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return '#4CAF50';
-      case 'unpaid':
-        return '#FF9800';
-      case 'pending':
-        return '#FFC107';
+  const getStatusColor = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case "completed":
+        return "#4CAF50";
+      case "unpaid":
+        return "#FF9800";
+      case "pending":
+        return "#FFC107";
       default:
-        return '#999';
+        return "#999";
     }
   };
 
-  const getStatusText = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+  const getStatusText = (paymentStatus: string) => {
+    return paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1);
   };
 
   const handleDocumentPress = (doc: RequestedDocument) => {
     router.push({
-      pathname: '/transaction-detail',
+      pathname: "/transaction-detail",
       params: {
+        requestId: doc.id,
         name: doc.name,
-        status: doc.status,
+        requestStatus: doc.requestStatus,
         refNumber: `REQ-2026-${doc.id}234`,
-        paymentMethod: doc.paymentMethod.replace('Paid Via ', ''),
+        paymentStatus: doc.paymentStatusLabel.replace("Payment: ", ""),
         dateRequested: doc.dateRequested,
-        amount: '50.00',
-        recipient: 'Pulong Buhangin, Santa Maria',
+        amount: "50.00",
+        recipient: "Pulong Buhangin, Santa Maria",
       },
     });
   };
@@ -106,18 +91,20 @@ const TransactionHistoryScreen = () => {
       <View style={styles.documentContent}>
         <Text style={styles.documentName}>{doc.name}</Text>
         <View style={styles.documentMeta}>
-          <Text style={styles.paymentMethod}>{doc.paymentMethod}</Text>
+          <Text style={styles.paymentMethod}>{doc.paymentStatusLabel}</Text>
           <Text style={styles.dateRequested}>{doc.dateRequested}</Text>
         </View>
       </View>
       <View
         style={[
           styles.statusBadge,
-          { backgroundColor: getStatusColor(doc.status) },
+          { backgroundColor: getStatusColor(doc.paymentStatus) },
         ]}
       >
         <MaterialIcons name="check-circle" size={16} color="#FFF" />
-        <Text style={styles.statusText}>{getStatusText(doc.status)}</Text>
+        <Text style={styles.statusText}>
+          {getStatusText(doc.paymentStatus)}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -138,28 +125,43 @@ const TransactionHistoryScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {requestedDocuments.map((doc) => renderDocumentCard(doc))}
+        {isLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="small" color="#1976D2" />
+            <Text style={styles.loadingText}>Loading transactions...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : requestedDocuments.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>You have no transactions yet.</Text>
+          </View>
+        ) : (
+          requestedDocuments.map((doc) => renderDocumentCard(doc))
+        )}
         <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNavigation}>
         <TouchableOpacity
-          style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
+          style={[styles.navItem, activeTab === "home" && styles.navItemActive]}
           onPress={() => {
-            setActiveTab('home');
-            router.push('/resident-dashboard');
+            setActiveTab("home");
+            router.push("/resident-dashboard");
           }}
         >
           <MaterialIcons
             name="home"
             size={24}
-            color={activeTab === 'home' ? '#1976D2' : '#999'}
+            color={activeTab === "home" ? "#1976D2" : "#999"}
           />
           <Text
             style={[
               styles.navLabel,
-              activeTab === 'home' && styles.navLabelActive,
+              activeTab === "home" && styles.navLabelActive,
             ]}
           >
             Home
@@ -167,18 +169,24 @@ const TransactionHistoryScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navItem, activeTab === 'request' && styles.navItemActive]}
-          onPress={() => setActiveTab('request')}
+          style={[
+            styles.navItem,
+            activeTab === "request" && styles.navItemActive,
+          ]}
+          onPress={() => {
+            setActiveTab("request");
+            router.push("/document-form");
+          }}
         >
           <MaterialIcons
             name="description"
             size={24}
-            color={activeTab === 'request' ? '#1976D2' : '#999'}
+            color={activeTab === "request" ? "#1976D2" : "#999"}
           />
           <Text
             style={[
               styles.navLabel,
-              activeTab === 'request' && styles.navLabelActive,
+              activeTab === "request" && styles.navLabelActive,
             ]}
           >
             Request
@@ -186,21 +194,24 @@ const TransactionHistoryScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navItem, activeTab === 'profile' && styles.navItemActive]}
+          style={[
+            styles.navItem,
+            activeTab === "profile" && styles.navItemActive,
+          ]}
           onPress={() => {
-            setActiveTab('profile');
-            router.push('/profile');
+            setActiveTab("profile");
+            router.push("/profile");
           }}
         >
           <MaterialIcons
             name="person"
             size={24}
-            color={activeTab === 'profile' ? '#1976D2' : '#999'}
+            color={activeTab === "profile" ? "#1976D2" : "#999"}
           />
           <Text
             style={[
               styles.navLabel,
-              activeTab === 'profile' && styles.navLabelActive,
+              activeTab === "profile" && styles.navLabelActive,
             ]}
           >
             Profile
@@ -208,21 +219,24 @@ const TransactionHistoryScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navItem, activeTab === 'settings' && styles.navItemActive]}
+          style={[
+            styles.navItem,
+            activeTab === "settings" && styles.navItemActive,
+          ]}
           onPress={() => {
-            setActiveTab('settings');
-            router.push('/settings');
+            setActiveTab("settings");
+            router.push("/settings");
           }}
         >
           <MaterialIcons
             name="settings"
             size={24}
-            color={activeTab === 'settings' ? '#1976D2' : '#999'}
+            color={activeTab === "settings" ? "#1976D2" : "#999"}
           />
           <Text
             style={[
               styles.navLabel,
-              activeTab === 'settings' && styles.navLabelActive,
+              activeTab === "settings" && styles.navLabelActive,
             ]}
           >
             Settings
@@ -236,24 +250,24 @@ const TransactionHistoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: "#F9F9F9",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -261,15 +275,15 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   documentCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -281,8 +295,8 @@ const styles = StyleSheet.create({
   },
   documentName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   documentMeta: {
@@ -290,16 +304,16 @@ const styles = StyleSheet.create({
   },
   paymentMethod: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 4,
   },
   dateRequested: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -307,19 +321,48 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
+  },
+  loadingState: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 8,
+  },
+  emptyState: {
+    alignItems: "center",
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  emptyText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#666",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#D32F2F",
+    textAlign: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
 
   // Bottom Navigation
   bottomNavigation: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    backgroundColor: "#FFF",
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: "#E0E0E0",
     paddingBottom: 8,
     paddingTop: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -327,22 +370,22 @@ const styles = StyleSheet.create({
   },
   navItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
   },
   navItemActive: {
     borderTopWidth: 3,
-    borderTopColor: '#1976D2',
+    borderTopColor: "#1976D2",
   },
   navLabel: {
     fontSize: 11,
-    color: '#999',
+    color: "#999",
     marginTop: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   navLabelActive: {
-    color: '#1976D2',
-    fontWeight: '600',
+    color: "#1976D2",
+    fontWeight: "600",
   },
 });
 

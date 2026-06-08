@@ -1,16 +1,16 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  Alert,
-  Image,
-  Modal,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+    Alert,
+    Image,
+    Modal,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 const BiometricLoginScreen = () => {
   const router = useRouter();
@@ -34,7 +34,7 @@ const BiometricLoginScreen = () => {
   const handleConfirmBiometric = () => {
     setShowBiometricModal(false);
     setIsScanning(false);
-    Alert.alert('Success', 'Biometric login has been enabled!');
+    Alert.alert("Success", "Biometric login has been enabled!");
     router.back();
   };
 
@@ -63,7 +63,7 @@ const BiometricLoginScreen = () => {
           {/* Biometric Icon */}
           <View style={styles.imageWrapper}>
             <Image
-              source={require('../assets/pics/biometric.png')}
+              source={require("../assets/pics/biometric.png")}
               style={styles.biometricImage}
             />
           </View>
@@ -71,7 +71,7 @@ const BiometricLoginScreen = () => {
           {/* Password Icon */}
           <View style={styles.imageWrapper}>
             <Image
-              source={require('../assets/pics/password.png')}
+              source={require("../assets/pics/password.png")}
               style={styles.passwordImage}
             />
           </View>
@@ -79,8 +79,11 @@ const BiometricLoginScreen = () => {
 
         {/* Description */}
         <Text style={styles.description}>
-          Biometric login allows you to log in using facial or fingerprint recognition. You can
-          change this option at any point <Text style={styles.boldText}>Profile > Privacy & security screen</Text>
+          Biometric login allows you to log in using facial or fingerprint
+          recognition. You can change this option at any point{" "}
+          <Text style={styles.boldText}>
+            Profile &gt; Privacy &amp; security screen
+          </Text>
         </Text>
 
         {/* Enable Button */}
@@ -108,7 +111,7 @@ const BiometricLoginScreen = () => {
 
             {/* Text */}
             <Text style={styles.modalTitle}>
-              {isScanning ? 'Scanning...' : 'Touch the fingerprint sensor'}
+              {isScanning ? "Scanning..." : "Touch the fingerprint sensor"}
             </Text>
 
             {/* Buttons */}
@@ -141,53 +144,53 @@ const BiometricLoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     paddingVertical: 32,
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#333",
+    textAlign: "center",
     marginBottom: 32,
   },
   imagesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 24,
     marginVertical: 32,
   },
   imageWrapper: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   biometricImage: {
     width: 140,
@@ -201,41 +204,41 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
+    color: "#555",
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
   },
   boldText: {
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
   enableButton: {
-    backgroundColor: '#6FA8DC',
+    backgroundColor: "#6FA8DC",
     borderRadius: 24,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   enableButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   biometricModal: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 20,
     paddingHorizontal: 32,
     paddingVertical: 40,
-    alignItems: 'center',
-    width: '80%',
-    shadowColor: '#000',
+    alignItems: "center",
+    width: "80%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -245,19 +248,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   scanningAnimation: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#333",
+    textAlign: "center",
     marginBottom: 24,
   },
   modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 12,
   },
   cancelButton: {
@@ -267,22 +270,22 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    color: '#1565C0',
-    fontWeight: '600',
-    textAlign: 'center',
+    color: "#1565C0",
+    fontWeight: "600",
+    textAlign: "center",
   },
   confirmButton: {
     flex: 1,
-    backgroundColor: '#6FA8DC',
+    backgroundColor: "#6FA8DC",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
   },
   confirmButtonText: {
     fontSize: 14,
-    color: '#FFF',
-    fontWeight: '600',
-    textAlign: 'center',
+    color: "#FFF",
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
 

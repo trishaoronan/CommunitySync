@@ -1,6 +1,6 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { MaterialIcons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import {
     Alert,
     Dimensions,
@@ -10,16 +10,16 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-} from 'react-native';
+} from "react-native";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const VerifyOTPScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const phoneNumber = params.phoneNumber as string;
-  
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef<TextInput[]>([]);
 
   const handleBackPress = () => {
@@ -27,11 +27,11 @@ const VerifyOTPScreen = () => {
   };
 
   const handleOtpChange = (value: string, index: number) => {
-    const numValue = value.replace(/[^0-9]/g, '');
-    
+    const numValue = value.replace(/[^0-9]/g, "");
+
     if (numValue.length > 1) {
       // Handle paste
-      const otpArray = numValue.split('').slice(0, 6);
+      const otpArray = numValue.split("").slice(0, 6);
       const newOtp = [...otp];
       otpArray.forEach((digit, i) => {
         if (index + i < 6) {
@@ -39,7 +39,7 @@ const VerifyOTPScreen = () => {
         }
       });
       setOtp(newOtp);
-      
+
       // Focus on next available input or last input
       const nextIndex = Math.min(index + otpArray.length, 5);
       inputRefs.current[nextIndex]?.focus();
@@ -56,35 +56,35 @@ const VerifyOTPScreen = () => {
   };
 
   const handleKeyPress = (index: number, key: string) => {
-    if (key === 'Backspace') {
-      if (otp[index] === '' && index > 0) {
+    if (key === "Backspace") {
+      if (otp[index] === "" && index > 0) {
         // Move to previous input if current is empty
         inputRefs.current[index - 1]?.focus();
         const newOtp = [...otp];
-        newOtp[index - 1] = '';
+        newOtp[index - 1] = "";
         setOtp(newOtp);
       } else {
         const newOtp = [...otp];
-        newOtp[index] = '';
+        newOtp[index] = "";
         setOtp(newOtp);
       }
     }
   };
 
   const handleVerify = () => {
-    const otpCode = otp.join('');
+    const otpCode = otp.join("");
     if (otpCode.length !== 6) {
-      Alert.alert('Invalid', 'Please enter the complete 6-digit code');
+      Alert.alert("Invalid", "Please enter the complete 6-digit code");
       return;
     }
-    
+
     // Mock verification
-    Alert.alert('Success', 'Phone number verified successfully!');
-    router.push('/login-credentials');
+    Alert.alert("Success", "Phone number verified successfully!");
+    router.push("/login-credentials");
   };
 
   const handleResend = () => {
-    Alert.alert('Code Sent', 'A new code has been sent to your phone');
+    Alert.alert("Code Sent", "A new code has been sent to your phone");
   };
 
   return (
@@ -94,7 +94,7 @@ const VerifyOTPScreen = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Verify It's you</Text>
+        <Text style={styles.headerTitle}>Verify It&apos;s you</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -130,7 +130,7 @@ const VerifyOTPScreen = () => {
 
         {/* Didn't get a code link */}
         <TouchableOpacity onPress={handleResend}>
-          <Text style={styles.resendLink}>Didn't get a code?</Text>
+          <Text style={styles.resendLink}>Didn&apos;t get a code?</Text>
         </TouchableOpacity>
 
         {/* Verify Button */}
@@ -147,10 +147,10 @@ const VerifyOTPScreen = () => {
       <View style={styles.keypadContainer}>
         <View style={styles.keypad}>
           {[
-            ['1', '2', '3'],
-            ['4', '5', '6'],
-            ['7', '8', '9'],
-            ['*', '0', '#'],
+            ["1", "2", "3"],
+            ["4", "5", "6"],
+            ["7", "8", "9"],
+            ["*", "0", "#"],
           ].map((row, rowIndex) => (
             <View key={rowIndex} style={styles.keypadRow}>
               {row.map((button) => (
@@ -158,7 +158,7 @@ const VerifyOTPScreen = () => {
                   key={button}
                   style={styles.keypadButton}
                   onPress={() => {
-                    const emptyIndex = otp.findIndex((digit) => digit === '');
+                    const emptyIndex = otp.findIndex((digit) => digit === "");
                     if (emptyIndex !== -1) {
                       handleOtpChange(button, emptyIndex);
                     }
@@ -182,7 +182,7 @@ const VerifyOTPScreen = () => {
                   .pop();
                 if (lastFilledIndex !== undefined) {
                   const newOtp = [...otp];
-                  newOtp[lastFilledIndex] = '';
+                  newOtp[lastFilledIndex] = "";
                   setOtp(newOtp);
                 }
               }}
@@ -199,7 +199,7 @@ const VerifyOTPScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.keypadButton}
-              onPress={() => setOtp(['', '', '', '', '', ''])}
+              onPress={() => setOtp(["", "", "", "", "", ""])}
               activeOpacity={0.7}
             >
               <MaterialIcons name="close" size={24} color="#333" />
@@ -214,28 +214,28 @@ const VerifyOTPScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
   content: {
     flex: 1,
@@ -245,73 +245,73 @@ const styles = StyleSheet.create({
   },
   instruction: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginBottom: 8,
   },
   phoneDisplay: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1565C0',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#1565C0",
+    textAlign: "center",
     marginBottom: 32,
   },
   otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   otpInput: {
-    width: '15%',
+    width: "15%",
     aspectRatio: 1,
     borderWidth: 2,
-    borderColor: '#DDD',
+    borderColor: "#DDD",
     borderRadius: 12,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 20,
-    fontWeight: '700',
-    color: '#1565C0',
+    fontWeight: "700",
+    color: "#1565C0",
   },
   resendLink: {
     fontSize: 14,
-    color: '#1565C0',
-    textAlign: 'center',
+    color: "#1565C0",
+    textAlign: "center",
     marginBottom: 24,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   verifyButton: {
-    backgroundColor: '#A8CCEB',
+    backgroundColor: "#A8CCEB",
     borderRadius: 24,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   verifyButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1565C0',
+    fontWeight: "600",
+    color: "#1565C0",
   },
   keypadContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
   keypad: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     borderRadius: 16,
     padding: 12,
   },
   keypadRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   keypadButton: {
     width: (width - 32 - 24 - 36) / 3,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -319,11 +319,11 @@ const styles = StyleSheet.create({
   },
   keypadButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   verifyKeypadButton: {
-    backgroundColor: '#1565C0',
+    backgroundColor: "#1565C0",
   },
 });
 

@@ -1,0 +1,20 @@
+-- 1. Drop ALL potentially conflicting policies on the profiles table
+DROP POLICY IF EXISTS "own profile - select" ON public.profiles;
+DROP POLICY IF EXISTS "own profile - update" ON public.profiles;
+DROP POLICY IF EXISTS "own profile - insert" ON public.profiles;
+DROP POLICY IF EXISTS "Residents manage own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.profiles;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.profiles;
+
+-- 2. Create clean, non-recursive policies
+CREATE POLICY "own profile - select"
+  ON public.profiles FOR SELECT
+  USING (auth.uid() = id);
+
+CREATE POLICY "own profile - update"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id);
+
+CREATE POLICY "own profile - insert"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);

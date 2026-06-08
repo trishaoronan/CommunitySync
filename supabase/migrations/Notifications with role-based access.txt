@@ -1,0 +1,67 @@
+-- 0A. Roles on profiles
+do $$ begin
+  create type user_role as enum ('resident', 'staff', 'admin');
+exception when duplicate_object then null; end $$;
+
+alter table public.profiles
+  add column if not exists role user_role not null default 'resident';
+
+-- 0B. Notifications table
+create table if not exists public.notifications (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  request_id  uuid references public.document_requests(id) on delete set null,
+  type        text not null default 'request',          -- 'request' | 'payment' | 'announcement'
+  title       text not null,
+  body        text not null,
+  is_read     boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists notifications_user_idx
+  on public.notifications (user_id, created_at desc);
+
+-- 0C. RLS: residents read/update only their own notifications
+alter table public.notifications enable row level security;
+
+drop policy if exists "own notifications - select" on public.notifications;
+create policy "own notifications - select"
+  on public.notifications for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "own notifications - insert" on public.notifications;
+create policy "own notifications - insert"
+  on public.notifications for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "own notifications - update" on public.notifications;
+create policy "own notifications - update"
+  on public.notifications for update
+  using (auth.uid() = user_id);
+
+-- 0D. Trigger: notify resident when request_status changes
+create or replace function public.notify_on_request_status_change()
+returns trigger language plpgsql security definer as $$
+begin
+  if new.request_status is distinct from old.request_status then
+    insert into public.notifications (user_id, request_id, type, title, body)
+    values (
+      new.user_id,
+      new.id,
+      'request',
+      'Request ' || initcap(new.request_status),
+      'Your ' || new.document_type || ' request is now ' || new.request_status || '.'
+    );
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_request_status_change on public.document_requests;
+create trigger trg_request_status_change
+  after update on public.document_requests
+  for each row execute function public.notify_on_request_status_change();
+
+-- 0E. Realtime: ensure notifications stream to subscribed clients
+do $$ begin
+  alter publication supabase_realtime add table public.notifications;
+exception when duplicate_object then null; end $$;

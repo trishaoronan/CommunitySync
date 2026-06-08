@@ -1,654 +1,308 @@
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  CheckboxField,
-  DatePickerField,
-  DocumentUploadField,
-  DropdownField,
-  DualDocumentUploadField,
-  FormSectionDivider,
-  NumberInputField,
-  TextAreaField,
-  TextInputField,
-} from '@/components/FormFields';
-import {
-  FormFieldConfig,
-  getDocumentConfig,
-} from '@/constants/documentConfigs';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import {
-  Alert,
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native';
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
-const { width } = Dimensions.get('window');
+type DocumentRoute =
+  | "/BarangayClearanceForm"
+  | "/BusinessPermitForm"
+  | "/BlotterIncidentReportForm"
+  | "/BurialAssistanceForm"
+  | "/CertificateOfResidencyForm"
+  | "/CertificateOfIndigencyForm"
+  | "/CertificateOfGoodMoralForm"
+  | "/CertificateOfSoloParentForm"
+  | "/BarangayIDForm"
+  | "/CertificateOfLowIncomeForm"
+  | "/CertificateOfNoDerogatoryRecordForm"
+  | "/CertificateOfNonEmploymentForm"
+  | "/other-document";
+
+type DocumentOption = {
+  label: string;
+  route: DocumentRoute;
+  fullWidth?: boolean;
+};
+
+const documentOptions: DocumentOption[] = [
+  { label: "Barangay Clearance", route: "/BarangayClearanceForm" },
+  { label: "Business Permit", route: "/BusinessPermitForm" },
+  { label: "Blotter Report", route: "/BlotterIncidentReportForm" },
+  { label: "Burial Assistance", route: "/BurialAssistanceForm" },
+  { label: "Certificate of Residency", route: "/CertificateOfResidencyForm" },
+  { label: "Certificate of Indigency", route: "/CertificateOfIndigencyForm" },
+  { label: "Good Moral", route: "/CertificateOfGoodMoralForm" },
+  { label: "Solo Parent", route: "/CertificateOfSoloParentForm" },
+  { label: "Barangay ID", route: "/BarangayIDForm" },
+  { label: "Certificate of Low Income", route: "/CertificateOfLowIncomeForm" },
+  {
+    label: "No Derogatory",
+    route: "/CertificateOfNoDerogatoryRecordForm",
+  },
+  {
+    label: "Non Employment Certificate",
+    route: "/CertificateOfNonEmploymentForm",
+  },
+  { label: "Other Document", route: "/other-document", fullWidth: true },
+];
 
 const DocumentForm = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const documentName = (params.documentName as string) || 'Document Request';
+  const [activeTab, setActiveTab] = useState("request");
 
-  // Get document configuration
-  const docConfig = getDocumentConfig(documentName);
-
-  // Initialize form data dynamically based on config
-  const initializeFormData = () => {
-    const data: Record<string, any> = {};
-    if (docConfig) {
-      docConfig.sections.forEach((section) => {
-        section.fields.forEach((field) => {
-          if (field.type === 'checkbox') {
-            data[field.name] = false;
-          } else {
-            data[field.name] = '';
-          }
-        });
-      });
-    }
-    data.modeOfRelease = '';
-    return data;
+  const handlePress = (route: DocumentRoute) => {
+    router.push(route);
   };
-
-  const [formData, setFormData] = useState<Record<string, any>>(
-    initializeFormData()
-  );
-  const [uploadedFiles, setUploadedFiles] = useState<
-    Record<string, { name: string; uri: string }>
-  >({});
-  const [isUploadingID, setIsUploadingID] = useState(false);
-
-  // Handle file upload
-  const handleUploadDocument = useCallback(async (docId?: string) => {
-    try {
-      setIsUploadingID(true);
-
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'We need media library permissions to upload documents.'
-        );
-        setIsUploadingID(false);
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        let fileName = 'Document';
-
-        if (asset.fileName) {
-          fileName = asset.fileName;
-        } else if (asset.uri) {
-          const parts = asset.uri.split('/');
-          fileName = parts[parts.length - 1];
-        }
-
-        const uploadKey = docId || 'validId';
-        setUploadedFiles((prev) => ({
-          ...prev,
-          [uploadKey]: { name: fileName, uri: asset.uri },
-        }));
-
-        Alert.alert('Success', `${fileName} uploaded successfully!`);
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      Alert.alert('Error', 'Failed to upload file. Please try again.');
-    } finally {
-      setIsUploadingID(false);
-    }
-  }, []);
-
-  // Validate form - check required fields
-  const validateForm = useCallback(() => {
-    if (!docConfig) return false;
-
-    let allFieldsValid = true;
-
-    docConfig.sections.forEach((section) => {
-      section.fields.forEach((field) => {
-        if (field.required) {
-          const value = formData[field.name];
-          if (!value || value === '' || value === false) {
-            allFieldsValid = false;
-          }
-        }
-      });
-    });
-
-    // Check if documents are uploaded
-    if (docConfig.uploadSections.length > 0) {
-      if (Object.keys(uploadedFiles).length === 0) {
-        allFieldsValid = false;
-      }
-    }
-
-    // Check mode of release
-    if (!formData.modeOfRelease) {
-      allFieldsValid = false;
-    }
-
-    return allFieldsValid;
-  }, [formData, uploadedFiles, docConfig]);
-
-  const handleProceed = () => {
-    if (!validateForm()) {
-      Alert.alert(
-        'Incomplete Form',
-        'Please complete all required fields and upload necessary documents.'
-      );
-      return;
-    }
-
-    // Navigate to payment screen with form data as params
-    router.push({
-      pathname: '/payment',
-      params: {
-        documentName: documentName,
-        formData: JSON.stringify(formData),
-        modeOfRelease: formData.modeOfRelease,
-      },
-    });
-  };
-
-  // Render form field based on type
-  const renderField = (field: FormFieldConfig) => {
-    const value = formData[field.name] || '';
-
-    switch (field.type) {
-      case 'text':
-      case 'email':
-        return (
-          <TextInputField
-            key={field.name}
-            config={field}
-            value={value}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text })
-            }
-          />
-        );
-
-      case 'phone':
-        return (
-          <TextInputField
-            key={field.name}
-            config={{ ...field, keyboardType: 'phone-pad' }}
-            value={value}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text })
-            }
-          />
-        );
-
-      case 'number':
-        return (
-          <NumberInputField
-            key={field.name}
-            config={field}
-            value={value}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text })
-            }
-          />
-        );
-
-      case 'date':
-        return (
-          <DatePickerField
-            key={field.name}
-            config={field}
-            value={value}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text })
-            }
-          />
-        );
-
-      case 'dropdown':
-        return (
-          <DropdownField
-            key={field.name}
-            config={field}
-            value={value}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text })
-            }
-          />
-        );
-
-      case 'checkbox':
-        return (
-          <CheckboxField
-            key={field.name}
-            config={field}
-            value={value}
-            isChecked={Boolean(formData[field.name])}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text === 'true' })
-            }
-          />
-        );
-
-      case 'textarea':
-        return (
-          <TextAreaField
-            key={field.name}
-            config={field}
-            value={value}
-            onChange={(text) =>
-              setFormData({ ...formData, [field.name]: text })
-            }
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  // Render row container for half-width fields
-  const renderFieldsInRow = (fields: FormFieldConfig[]) => {
-    const rows: FormFieldConfig[][] = [];
-    let currentRow: FormFieldConfig[] = [];
-
-    fields.forEach((field) => {
-      currentRow.push(field);
-      if (field.width === 'full' || currentRow.length === 2) {
-        rows.push(currentRow);
-        currentRow = [];
-      }
-    });
-
-    if (currentRow.length > 0) {
-      rows.push(currentRow);
-    }
-
-    return rows.map((row, rowIndex) => {
-      if (row.length === 1 && row[0].width === 'full') {
-        return (
-          <View key={`row-${rowIndex}`} style={styles.fullColumn}>
-            {renderField(row[0])}
-          </View>
-        );
-      }
-
-      return (
-        <View key={`row-${rowIndex}`} style={styles.rowContainer}>
-          {row.map((field) => (
-            <View key={field.name} style={styles.halfColumn}>
-              {renderField(field)}
-            </View>
-          ))}
-        </View>
-      );
-    });
-  };
-
-  if (!docConfig) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Document configuration not found</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#1F1F1F" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Request A Document</Text>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => router.push("/notifications")}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications-outline" size={22} color="#1F1F1F" />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.subtitle}>
+        Select a document to start your request
+      </Text>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Yellow Header Card */}
-        <View style={styles.headerCard}>
-          <Text style={styles.documentTitle}>{documentName}</Text>
-          <Text style={styles.documentDescription}>
-            {docConfig.description}
-          </Text>
-        </View>
-
-        {/* Form Container */}
-        <View style={styles.formContainer}>
-          {/* Render all sections */}
-          {docConfig.sections.map((section, sectionIndex) => (
-            <View key={`section-${sectionIndex}`}>
-              <FormSectionDivider title={section.title} />
-              {renderFieldsInRow(section.fields)}
-            </View>
+        <View style={styles.grid}>
+          {documentOptions.map((option) => (
+            <TouchableOpacity
+              key={option.label}
+              style={[styles.card, option.fullWidth && styles.cardFull]}
+              onPress={() => handlePress(option.route)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.cardText}>{option.label}</Text>
+            </TouchableOpacity>
           ))}
-
-          {/* Document Upload Sections */}
-          {docConfig.uploadSections.map((uploadSection, uploadIndex) => {
-            if (uploadSection.type === 'single') {
-              return (
-                <DocumentUploadField
-                  key={`upload-${uploadIndex}`}
-                  title={uploadSection.title}
-                  description={uploadSection.description}
-                  uploadedFileName={uploadedFiles['validId']?.name}
-                  isUploading={isUploadingID}
-                  onUpload={() => handleUploadDocument('validId')}
-                />
-              );
-            } else if (uploadSection.type === 'dual' && uploadSection.documents) {
-              return (
-                <DualDocumentUploadField
-                  key={`upload-${uploadIndex}`}
-                  title={uploadSection.title}
-                  description={uploadSection.description}
-                  documents={uploadSection.documents.map((doc) => ({
-                    ...doc,
-                    uploaded: Boolean(uploadedFiles[doc.id]),
-                    fileName: uploadedFiles[doc.id]?.name,
-                  }))}
-                  onUpload={handleUploadDocument}
-                  isUploading={isUploadingID}
-                />
-              );
-            }
-            return null;
-          })}
-
-          {/* Mode of Release */}
-          <View style={styles.fullColumn}>
-            <Text style={styles.sectionTitle}>Mode of Release</Text>
-
-            <TouchableOpacity
-              style={[
-                styles.modeCard,
-                formData.modeOfRelease === 'Pickup at the Barangay Hall' &&
-                  styles.modeCardSelected,
-              ]}
-              onPress={() =>
-                setFormData({
-                  ...formData,
-                  modeOfRelease: 'Pickup at the Barangay Hall',
-                })
-              }
-            >
-              <View style={styles.modeCardContent}>
-                <MaterialIcons
-                  name="place"
-                  size={28}
-                  color={
-                    formData.modeOfRelease === 'Pickup at the Barangay Hall'
-                      ? '#1976D2'
-                      : '#666'
-                  }
-                />
-                <View style={styles.modeCardText}>
-                  <Text
-                    style={[
-                      styles.modeCardTitle,
-                      formData.modeOfRelease === 'Pickup at the Barangay Hall' &&
-                        styles.modeCardTitleSelected,
-                    ]}
-                  >
-                    Pickup at the Barangay Hall
-                  </Text>
-                  <Text style={styles.modeCardSubtitle}>
-                    Collect document in person
-                  </Text>
-                </View>
-              </View>
-              {formData.modeOfRelease === 'Pickup at the Barangay Hall' && (
-                <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.modeCard,
-                formData.modeOfRelease === 'Download' && styles.modeCardSelected,
-              ]}
-              onPress={() =>
-                setFormData({ ...formData, modeOfRelease: 'Download' })
-              }
-            >
-              <View style={styles.modeCardContent}>
-                <MaterialIcons
-                  name="cloud-download"
-                  size={28}
-                  color={
-                    formData.modeOfRelease === 'Download' ? '#1976D2' : '#666'
-                  }
-                />
-                <View style={styles.modeCardText}>
-                  <Text
-                    style={[
-                      styles.modeCardTitle,
-                      formData.modeOfRelease === 'Download' &&
-                        styles.modeCardTitleSelected,
-                    ]}
-                  >
-                    Download
-                  </Text>
-                  <Text style={styles.modeCardSubtitle}>
-                    Get digital copy via email
-                  </Text>
-                </View>
-              </View>
-              {formData.modeOfRelease === 'Download' && (
-                <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
-              )}
-            </TouchableOpacity>
-
-            {/* Payment Notice */}
-            <View style={styles.paymentNoticeContainer}>
-              <Text style={styles.paymentNoticeLabel}>Payment Notice</Text>
-              <Text style={styles.paymentNoticeText}>
-                Send the payment to 09238412342
-              </Text>
-            </View>
-          </View>
-
-          {/* Proceed Button */}
-          <TouchableOpacity
-            style={styles.proceedButtonContainer}
-            onPress={handleProceed}
-            activeOpacity={0.8}
-            disabled={!validateForm()}
-          >
-            <LinearGradient
-              colors={
-                validateForm()
-                  ? ['#FFD54F', '#4A90E2']
-                  : ['#BDBDBD', '#9E9E9E']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.proceedButton}
-            >
-              <Text style={styles.proceedButtonText}>Proceed</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <View style={{ height: 40 }} />
         </View>
       </ScrollView>
+
+      <View style={styles.bottomNavigation}>
+        <TouchableOpacity
+          style={[styles.navItem, activeTab === "home" && styles.navItemActive]}
+          onPress={() => {
+            setActiveTab("home");
+            router.push("/resident-dashboard");
+          }}
+        >
+          <MaterialIcons
+            name="home"
+            size={24}
+            color={activeTab === "home" ? "#1976D2" : "#999"}
+          />
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === "home" && styles.navLabelActive,
+            ]}
+          >
+            Home
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.navItem,
+            activeTab === "request" && styles.navItemActive,
+          ]}
+          onPress={() => {
+            setActiveTab("request");
+            router.push("/document-form");
+          }}
+        >
+          <MaterialIcons
+            name="description"
+            size={24}
+            color={activeTab === "request" ? "#1976D2" : "#999"}
+          />
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === "request" && styles.navLabelActive,
+            ]}
+          >
+            Request
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.navItem,
+            activeTab === "profile" && styles.navItemActive,
+          ]}
+          onPress={() => {
+            setActiveTab("profile");
+            router.push("/profile");
+          }}
+        >
+          <MaterialIcons
+            name="person"
+            size={24}
+            color={activeTab === "profile" ? "#1976D2" : "#999"}
+          />
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === "profile" && styles.navLabelActive,
+            ]}
+          >
+            Profile
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.navItem,
+            activeTab === "settings" && styles.navItemActive,
+          ]}
+          onPress={() => {
+            setActiveTab("settings");
+            router.push("/settings");
+          }}
+        >
+          <MaterialIcons
+            name="settings"
+            size={24}
+            color={activeTab === "settings" ? "#1976D2" : "#999"}
+          />
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === "settings" && styles.navLabelActive,
+            ]}
+          >
+            Settings
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
 
-export default DocumentForm;
-
-// ==========================================
-// STYLES
-// ==========================================
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F6F6F2",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: "#F6F6F2",
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 18,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1F1F1F",
+  },
+  subtitle: {
+    textAlign: "center",
+    color: "#5A5A5A",
+    fontSize: 13,
+    marginBottom: 12,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 18,
+    paddingBottom: 110,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#D32F2F',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-
-  // Header Card
-  headerCard: {
-    backgroundColor: '#FFEB3B',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginBottom: 20,
-  },
-  documentTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  documentDescription: {
-    fontSize: 13,
-    color: '#555',
-    lineHeight: 18,
-  },
-
-  // Form Container
-  formContainer: {
-    backgroundColor: '#FFFACD',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-    marginTop: 12,
-  },
-
-  // Form Fields Layout
-  rowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  halfColumn: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  fullColumn: {
-    width: '100%',
-    marginBottom: 12,
-  },
-
-  // Mode Cards
-  modeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  modeCardSelected: {
-    borderColor: '#1976D2',
-    backgroundColor: '#E3F2FD',
-  },
-  modeCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     gap: 12,
   },
-  modeCardText: {
+  card: {
+    width: "48%",
+    backgroundColor: "#FFF1B3",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 52,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardFull: {
+    width: "62%",
+    alignSelf: "center",
+  },
+  cardText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#1F1F1F",
+    textAlign: "center",
+  },
+  bottomNavigation: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+    paddingBottom: 8,
+    paddingTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  navItem: {
     flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
   },
-  modeCardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+  navItemActive: {
+    borderTopWidth: 3,
+    borderTopColor: "#1976D2",
   },
-  modeCardTitleSelected: {
-    color: '#1976D2',
+  navLabel: {
+    fontSize: 11,
+    color: "#999",
+    marginTop: 4,
+    fontWeight: "500",
   },
-  modeCardSubtitle: {
-    fontSize: 12,
-    color: '#999',
-  },
-
-  // Payment Notice
-  paymentNoticeContainer: {
-    marginTop: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#F0F4F8',
-    borderLeftWidth: 4,
-    borderLeftColor: '#1976D2',
-    borderRadius: 4,
-  },
-  paymentNoticeLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1976D2',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  paymentNoticeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-
-  // Proceed Button
-  proceedButtonContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-    opacity: 1,
-  },
-  proceedButton: {
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  proceedButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFF',
+  navLabelActive: {
+    color: "#1976D2",
+    fontWeight: "600",
   },
 });
+
+export default DocumentForm;

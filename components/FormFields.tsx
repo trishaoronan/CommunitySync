@@ -1,13 +1,13 @@
-import { FormFieldConfig } from '@/constants/documentConfigs';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { FormFieldConfig } from "@/constants/documentConfigs";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View
-} from 'react-native';
+    View,
+} from "react-native";
 
 export interface FormFieldProps {
   config: FormFieldConfig;
@@ -37,7 +37,7 @@ export const TextInputField: React.FC<FormFieldProps> = ({
       placeholderTextColor="#CCC"
       value={value}
       onChangeText={onChange}
-      keyboardType={config.keyboardType || 'default'}
+      keyboardType={config.keyboardType || "default"}
     />
     {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
@@ -64,7 +64,7 @@ export const NumberInputField: React.FC<FormFieldProps> = ({
       placeholderTextColor="#CCC"
       value={value}
       onChangeText={(text) => {
-        const numericValue = text.replace(/[^0-9]/g, '');
+        const numericValue = text.replace(/[^0-9]/g, "");
         onChange(numericValue);
       }}
       keyboardType="numeric"
@@ -91,7 +91,7 @@ export const DatePickerField: React.FC<FormFieldProps> = ({
     <View style={[styles.dateInputWrapper, error && styles.inputError]}>
       <TextInput
         style={styles.dateInput}
-        placeholder={config.placeholder || 'MM/DD/YYYY'}
+        placeholder={config.placeholder || "MM/DD/YYYY"}
         placeholderTextColor="#CCC"
         value={value}
         onChangeText={onChange}
@@ -130,9 +130,9 @@ export const DropdownField: React.FC<FormFieldProps> = ({
         style={[styles.dropdownButton, error && styles.inputError]}
         onPress={() => setIsOpen(!isOpen)}
       >
-        <Text style={styles.dropdownButtonText}>{value || 'Select'}</Text>
+        <Text style={styles.dropdownButtonText}>{value || "Select"}</Text>
         <MaterialIcons
-          name={isOpen ? 'arrow-drop-up' : 'arrow-drop-down'}
+          name={isOpen ? "arrow-drop-up" : "arrow-drop-down"}
           size={20}
           color="#333"
         />
@@ -167,7 +167,7 @@ export const CheckboxField: React.FC<
 > = ({ config, isChecked, onChange, error }) => (
   <TouchableOpacity
     style={styles.checkboxContainer}
-    onPress={() => onChange(isChecked ? 'false' : 'true')}
+    onPress={() => onChange(isChecked ? "false" : "true")}
   >
     <View
       style={[
@@ -176,9 +176,7 @@ export const CheckboxField: React.FC<
         error && styles.inputError,
       ]}
     >
-      {isChecked && (
-        <MaterialIcons name="check" size={16} color="#1976D2" />
-      )}
+      {isChecked && <MaterialIcons name="check" size={16} color="#1976D2" />}
     </View>
     <Text style={styles.checkboxLabel}>{config.label}</Text>
     {error && <Text style={styles.errorText}>{error}</Text>}
@@ -220,10 +218,11 @@ export const TextAreaField: React.FC<FormFieldProps> = ({
 
 export interface DocumentUploadFieldProps {
   title: string;
-  description: string;
+  description?: string;
   uploadedFileName?: string;
   isUploading?: boolean;
   onUpload: () => void;
+  buttonLabel?: string;
 }
 
 export const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
@@ -232,28 +231,26 @@ export const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
   uploadedFileName,
   isUploading,
   onUpload,
+  buttonLabel,
 }) => (
   <View style={styles.fullColumn}>
     <Text style={styles.sectionTitle}>{title}</Text>
-    <Text style={styles.uploadDescription}>{description}</Text>
+    {description ? (
+      <Text style={styles.uploadDescription}>{description}</Text>
+    ) : null}
     <TouchableOpacity
       style={styles.uploadButton}
       onPress={onUpload}
       disabled={isUploading}
     >
       <MaterialIcons
-        name={isUploading ? 'hourglass-empty' : 'upload'}
+        name={isUploading ? "hourglass-empty" : "upload"}
         size={20}
-        color={isUploading ? '#999' : '#666'}
+        color={isUploading ? "#999" : "#666"}
         style={styles.uploadIcon}
       />
-      <Text
-        style={[
-          styles.uploadButtonText,
-          isUploading && { color: '#999' },
-        ]}
-      >
-        {isUploading ? 'Uploading...' : 'Tap to Upload Valid ID'}
+      <Text style={[styles.uploadButtonText, isUploading && { color: "#999" }]}>
+        {isUploading ? "Uploading..." : buttonLabel || "Tap to Upload Document"}
       </Text>
     </TouchableOpacity>
 
@@ -301,18 +298,15 @@ export const DualDocumentUploadField: React.FC<DualDocumentUploadProps> = ({
           disabled={isUploading}
         >
           <MaterialIcons
-            name={isUploading ? 'hourglass-empty' : 'upload'}
+            name={isUploading ? "hourglass-empty" : "upload"}
             size={20}
-            color={isUploading ? '#999' : '#666'}
+            color={isUploading ? "#999" : "#666"}
             style={styles.uploadIcon}
           />
           <Text
-            style={[
-              styles.uploadButtonText,
-              isUploading && { color: '#999' },
-            ]}
+            style={[styles.uploadButtonText, isUploading && { color: "#999" }]}
           >
-            {isUploading ? 'Uploading...' : `Tap to Upload ${doc.label}`}
+            {isUploading ? "Uploading..." : `Tap to Upload ${doc.label}`}
           </Text>
         </TouchableOpacity>
 
@@ -345,33 +339,33 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
     marginBottom: 6,
   },
   requiredIndicator: {
-    color: '#D32F2F',
-    fontWeight: 'bold',
+    color: "#D32F2F",
+    fontWeight: "bold",
   },
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: '#333',
+    color: "#333",
     borderWidth: 1,
-    borderColor: '#EEE',
+    borderColor: "#EEE",
   },
   inputError: {
-    borderColor: '#D32F2F',
+    borderColor: "#D32F2F",
     borderWidth: 1.5,
   },
   errorText: {
-    color: '#D32F2F',
+    color: "#D32F2F",
     fontSize: 11,
     marginTop: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   // Dropdown Styles
@@ -379,55 +373,55 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dropdownButton: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#EEE',
+    borderColor: "#EEE",
   },
   dropdownButtonText: {
     fontSize: 13,
-    color: '#333',
+    color: "#333",
   },
   dropdownMenu: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 8,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#EEE',
-    overflow: 'hidden',
+    borderColor: "#EEE",
+    overflow: "hidden",
     zIndex: 1000,
   },
   dropdownItem: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   dropdownItemText: {
     fontSize: 13,
-    color: '#333',
+    color: "#333",
   },
 
   // Date Input
   dateInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#EEE',
+    borderColor: "#EEE",
     paddingHorizontal: 12,
   },
   dateInput: {
     flex: 1,
     paddingVertical: 10,
     fontSize: 13,
-    color: '#333',
+    color: "#333",
   },
   calendarIcon: {
     marginLeft: 8,
@@ -435,21 +429,21 @@ const styles = StyleSheet.create({
 
   // Textarea
   textarea: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: '#333',
+    color: "#333",
     borderWidth: 1,
-    borderColor: '#EEE',
-    fontFamily: 'System',
+    borderColor: "#EEE",
+    fontFamily: "System",
   },
 
   // Checkbox
   checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   checkbox: {
@@ -457,59 +451,59 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: '#CCC',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#CCC",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
   },
   checkboxChecked: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#1976D2',
+    backgroundColor: "#E3F2FD",
+    borderColor: "#1976D2",
   },
   checkboxLabel: {
     fontSize: 13,
-    color: '#333',
+    color: "#333",
     flex: 1,
   },
 
   // Upload Section
   fullColumn: {
-    width: '100%',
+    width: "100%",
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 12,
     marginTop: 12,
   },
   uploadDescription: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
     marginBottom: 12,
   },
   uploadButton: {
-    backgroundColor: '#B3E5FC',
+    backgroundColor: "#B3E5FC",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   uploadIcon: {
     marginRight: 8,
   },
   uploadButtonText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
   },
   uploadSuccessMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8F5E9',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
@@ -518,7 +512,7 @@ const styles = StyleSheet.create({
   },
   uploadSuccessText: {
     fontSize: 12,
-    color: '#2E7D32',
-    fontWeight: '500',
+    color: "#2E7D32",
+    fontWeight: "500",
   },
 });
